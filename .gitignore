@@ -1,0 +1,82 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Eclipse ###
+.metadata/
+
+# Logs
+logs/
+*.log
+*.log.gz
+
+### Uploaded files ###
+src/main/resources/static/media/users/
+
+### OS files ###
+.DS_Store
+Thumbs.db
+
+### Sensitive config ###
+application.properties
+application-local.properties
+application-dev.properties
+
+### Selenium binaries ###
+src/main/resources/selenium/
+
+### Database dumps ###
+database/
+
+### MyBatis mapper XML (SQL queries) ###
+src/main/resources/mapper/*.xml
+
+### Jasper report templates ###
+src/main/resources/report/
+
+### Static vendor assets ###
+src/main/resources/static/plugins/
+src/main/resources/static/vendor/
+src/main/resources/static/css/
+src/main/resources/static/img/
+src/main/resources/static/js/scripts.bundle.js
+src/main/resources/static/js/scripts.bundle.min.js
+src/main/resources/static/js/axios.min.js
+src/main/resources/static/js/pages/
+src/main/resources/static/media/
+
+### Package files ###
+*.jar
+*.war
+*.ear
+!src/main/resources/**/*.jar

@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+  <title>Vessel Position - VMS</title>
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+
+  <!-- Favicons -->
+  <!-- <link href="/img/favicon.png" rel="icon"> -->
+  <!-- <link href="/img/apple-touch-icon.png" rel="apple-touch-icon"> -->
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+  <link th:href="@{/vendor/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+  <link th:href="@{/vendor/bootstrap-icons/bootstrap-icons.css}" rel="stylesheet">
+  <link th:href="@{/vendor/boxicons/css/boxicons.min.css}" rel="stylesheet">
+  <link th:href="@{/vendor/quill/quill.snow.css}" rel="stylesheet">
+  <link th:href="@{/vendor/quill/quill.bubble.css}" rel="stylesheet">
+  <link th:href="@{/vendor/remixicon/remixicon.css}" rel="stylesheet">
+  <link th:href="@{/vendor/simple-datatables/style.css}" rel="stylesheet">
+  <link th:href="@{/css/style.css}" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
+
+  <script th:src="@{/plugins/custom/pace/pace.min.js}"></script>
+    <link rel="stylesheet" th:href="@{/plugins/custom/pace/loading-bar.css}">
+
+    <!--begin::Global Theme Styles(used by all pages)-->
+    <link th:href="@{/plugins/global/plugins.bundle.css}" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/plugins/custom/prismjs/prismjs.bundle.css}" rel="stylesheet" type="text/css"/>
+
+    <link href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.13.0/dist/leaflet-geoman.css" rel="stylesheet">
+    <!-- <link th:href="@{/css/style.bundle.css}" rel="stylesheet" type="text/css"/> -->
+    <!--end::Global Theme Styles-->
+    <!--begin::Layout Themes(used by all pages)-->
+    <!-- <link th:href="@{/css/themes/layout/header/base/light.css}" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/css/themes/layout/header/menu/light.css}" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/css/themes/layout/brand/light.css}" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/css/themes/layout/aside/light.css}" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/css/fa-pro/css/all.css}" rel="stylesheet" type="text/css"/> -->
+    <!--end::Layout Themes-->
+
+  <!-- <th:block th:insert="~{layout/head.html}"/> -->
+
+  <style>
+    .invisible-marker{
+        display: none !important;
+    }
+    
+    #map {
+        height: 600px; /* Tinggi peta */
+    }
+
+    /* Fix z-index untuk DateTimePicker dalam modal */
+    .ui-datepicker {
+        z-index: 9999 !important;
+    }
+
+    .leaflet-top, .leaflet-left {
+        position: absolute;
+        z-index: initial;
+        pointer-events: none;
+    }
+
+    .leaflet-top, .leaflet-right {
+        position: absolute;
+        z-index: initial;
+        pointer-events: none;
+    }
+
+    .custom-modal {
+        position: fixed;
+        top: 50px;            /* Jarak dari atas */
+        left: 20px;           /* Modal muncul di kiri */
+        right: auto;          /* Hindari konflik dengan posisi kanan */
+        width: 380px;         /* Atur lebar sesuai kebutuhan */
+        /* z-index: 1050;        Pastikan modal tampil di atas */
+    }
+
+    .flatpickr-calendar {
+        font-size: 12px !important;
+        max-height: 250px;
+        overflow: auto;
+      }
+
+      .flatpickr-days {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .flatpickr-time {
+        height: 30px;
+        font-size: 12px;
+        padding: 2px 4px;
+      }
+
+        #vesselInfoModal {
+            font-size: 0.75rem; /* Ukuran font kecil (sekitar 12px) */
+        }
+
+        table td,
+        table th {
+            padding: 0.25rem 0.5rem !important; /* Padding kecil */
+            vertical-align: middle;
+        }
+
+        .table {
+            margin-bottom: 0 !important; /* Hapus jarak bawah default */
+        }
+  </style>
+</head>
+
+<body>
+
+  <!-- ======= Header ======= -->
+  <th:block th:insert="~{layout/header.html}"/>
+  <!-- End Header -->
+
+  <!-- ======= Sidebar ======= -->
+  <th:block th:insert="~{layout/sidebar.html :: sidebarFragment(activeMenu='vessel-position')}"/>
+  <!-- End Sidebar-->
+
+  <main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Vessel Position</h1>
+      <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item active"><a href="index.html">Vessel Position</a></li>
+        </ol>
+      </nav>
+    </div><!-- End Page Title -->
+
+    <section class="section dashboard">
+      <div class="row">
+
+        <!-- Reports -->
+        <div class="col-12">
+          <div class="card">
+
+            <div class="filter">
+              <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+              <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                  <h6>Filter</h6>
+                </li>
+
+                <li><a class="dropdown-item" href="#">Today</a></li>
+                <li><a class="dropdown-item" href="#">This Month</a></li>
+                <li><a class="dropdown-item" href="#">This Year</a></li>
+              </ul>
+            </div>
+
+            <div class="card-body">
+              <!-- <h5 class="card-title">Reports <span>/Today</span></h5> -->
+               <br> 
+              <!-- <div id="map"></div> -->
+
+              <!--begin::Content-->
+                <div id="map-container" style="position: relative; height: 600px;">
+                    <div class="content d-flex flex-column flex-column-fluid" id="kt_content" style="height: 100%;">
+                    </div>
+                </div>
+              <!--end::Content-->
+
+            </div>
+
+          </div>
+        </div><!-- End Reports -->
+
+      </div>
+    </section>
+
+    <!--begin::Quick Panel-->
+    <div class="modal fade custom-modal" id="vesselInfoModal" role="dialog" data-bs-backdrop="false" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header p-2">
+                    <h5 class="modal-title" id="vessel_name"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <!--<div class="modal-body" data-scroll="true" data-height="375" data-mobile-height="300">-->
+                <div class="modal-body p-0" style="height: 60vh;">
+                    
+                    <!-- Default Accordion -->
+                    <div class="accordion" id="accordionExample">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingPositionReport">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePositionReport" aria-expanded="false" aria-controls="collapsePositionReport">
+                                    Position Report
+                                </button>
+                            </h2>
+                            <div id="collapsePositionReport" class="accordion-collapse collapse show" aria-labelledby="headingPositionReport" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <table id="vesselTable_positionreport" class="table table-sm table-row-bordered table-row-gray-100 mb-0">
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    Meteorology
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <table id="vesselTable_meteorology" class="table table-sm table-row-bordered table-row-gray-100 mb-0">
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                    Fuel Report Data
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <table id="vesselTable_fuelreportdata" class="table table-sm table-row-bordered table-row-gray-100 mb-0">
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                    Date
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    <form class="form" id="routeFilterForm">
+                                        <input type="hidden" id="vessel_email" name="vessel_email">
+                                        <div class="form-group row mb-2">
+                                            <label class="col-4 col-form-label">Start Date</label>
+                                            <div class="col-8">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" id="start_date" name="start_date" value=""
+                                                        placeholder="Select start date" required>
+                                                    <button class="btn btn-outline-secondary" type="button" id="start_date_trigger">
+                                                        <i class="bi bi-calendar3"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row mb-2">
+                                            <label class="col-4 col-form-label">End Date</label>
+                                            <div class="col-8">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" id="end_date" name="end_date" value=""
+                                                        placeholder="Select end date" required>
+                                                    <button class="btn btn-outline-secondary" type="button" id="end_date_trigger">
+                                                        <i class="bi bi-calendar3"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group row mb-0 no-border-group">
+                                            <div class="p-0" style="display: flex;">
+                                                <button type="button" class="btn btn-sm btn-outline-warning mx-1" id="clearRoutesButton">Clear Routes</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary mx-1" id="showRoutesByDateButton">Show Routes By Date</button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger mx-1" id="showAllRoutesButton">Show All Routes</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                    <!-- <div class="alert alert-custom alert-light-primary mb-0 rounded-0" role="alert">
+                        <div class="alert-text font-weight-boldest">Routes</div>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+  </main><!-- End #main -->
+
+  <!-- ======= Footer ======= -->
+  <th:block th:insert="~{layout/footer.html}"/>
+  <!-- <th:block th:insert="~{layout/script.html}"/> -->
+  <!-- End Footer -->
+
+  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+  
+  <script>const HOST_URL = "/";</script>
+  <script>var KTAppSettings = { "breakpoints": { "sm": 576, "md": 768, "lg": 992, "xl": 1200, "xxl": 1400 }, "colors": { "theme": { "base": { "white": "#ffffff", "primary": "#3699FF", "secondary": "#E5EAEE", "success": "#1BC5BD", "info": "#8950FC", "warning": "#FFA800", "danger": "#F64E60", "light": "#E4E6EF", "dark": "#181C32" }, "light": { "white": "#ffffff", "primary": "#E1F0FF", "secondary": "#EBEDF3", "success": "#C9F7F5", "info": "#EEE5FF", "warning": "#FFF4DE", "danger": "#FFE2E5", "light": "#F3F6F9", "dark": "#D6D6E0" }, "inverse": { "white": "#ffffff", "primary": "#ffffff", "secondary": "#3F4254", "success": "#ffffff", "info": "#ffffff", "warning": "#ffffff", "danger": "#ffffff", "light": "#464E5F", "dark": "#ffffff" } }, "gray": { "gray-100": "#F3F6F9", "gray-200": "#EBEDF3", "gray-300": "#E4E6EF", "gray-400": "#D1D3E0", "gray-500": "#B5B5C3", "gray-600": "#7E8299", "gray-700": "#5E6278", "gray-800": "#3F4254", "gray-900": "#181C32" } }, "font-family": "Poppins" };</script>
+
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+  <script th:src="@{/vendor/apexcharts/apexcharts.min.js}"></script>
+  <script th:src="@{/vendor/bootstrap/js/bootstrap.bundle.min.js}"></script>
+  <script th:src="@{/vendor/chart.js/chart.umd.js}"></script>
+  <script th:src="@{/vendor/echarts/echarts.min.js}"></script>
+  <script th:src="@{/vendor/quill/quill.min.js}"></script>
+  <script th:src="@{/vendor/simple-datatables/simple-datatables.js}"></script>
+  <script th:src="@{/vendor/tinymce/tinymce.min.js}"></script>
+  <script th:src="@{/vendor/php-email-form/validate.js}"></script>
+
+  <script th:src="@{/js/main.js}"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <!--begin::Global Theme Bundle(used by all pages)-->
+<script th:src="@{/plugins/global/plugins.bundle.js}"></script>
+<script th:src="@{/plugins/custom/prismjs/prismjs.bundle.js}"></script>
+<script th:src="@{/js/scripts.bundle.js}"></script>
+<script th:src="@{/plugins/custom/datatables/datatables.bundle.js}"></script>
+
+<!-- <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-realtime@2.0.0/dist/leaflet-realtime.js"></script>
+<script th:src="@{/plugins/custom/leaflet/leaflet.bundle.js}"></script>
+<script th:src="@{/plugins/custom/leaflet/plugins/leaflet-realtime/leaflet-realtime.min.js}"></script>
+<script th:src="@{/plugins/custom/leaflet/plugins/leaflet.rotatedMarker.js}"></script>
+<script th:src="@{/plugins/custom/leaflet/plugins/Leaflet.PolylineDecorator/dist/leaflet.polylineDecorator.js}"></script> -->
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Leaflet Realtime -->
+<script src="https://unpkg.com/leaflet-realtime/dist/leaflet-realtime.js"></script>
+
+<!-- Leaflet Custom Scripts -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.bundle.js"></script>
+<script src="https://unpkg.com/leaflet-realtime/dist/leaflet-realtime.min.js"></script>
+<script src="https://unpkg.com/leaflet-rotatedmarker/dist/leaflet.rotatedMarker.js"></script>
+<script src="https://unpkg.com/leaflet-polylinedecorator/dist/leaflet.polylineDecorator.js"></script>
+
+
+<script th:src="@{/plugins/custom/PDFObject/pdfobject.min.js}"></script>
+<script th:src="@{/js/jquery.number.js}"></script>
+<script th:src="@{/js/axios.min.js}"></script>
+<script th:src="@{/js/jquery.serializeToJSON.js}"></script>
+<script th:src="@{/js/WebUtil.js}"></script>
+
+<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.13.0/dist/leaflet-geoman.min.js"></script>
+
+  <script>
+      
+    (function ($) {
+        "use strict";
+        const toDegreesMinutesAndSeconds = (coordinate) => {
+            const absolute = Math.abs(coordinate);
+            const degrees = Math.floor(absolute);
+            const minutesNotTruncated = (absolute - degrees) * 60;
+            const minutes = Math.floor(minutesNotTruncated);
+            const seconds = Math.floor((minutesNotTruncated - minutes) * 60);
+
+            return degrees + "&deg; " + minutes + "' " + seconds + "''";
+        }
+
+        const convertDMS = (lat, lng) => {
+            const latitude = toDegreesMinutesAndSeconds(lat);
+            const latitudeCardinal = lat >= 0 ? "N" : "S";
+
+            const longitude = toDegreesMinutesAndSeconds(lng);
+            const longitudeCardinal = lng >= 0 ? "E" : "W";
+
+            //return latitude + " " + latitudeCardinal + "\n" + longitude + " " + longitudeCardinal;
+            return {
+                dmsLat: latitude + " " + latitudeCardinal,
+                dmsLng: longitude + " " + longitudeCardinal
+            };
+        }
+        const menuMonitoring = $('#menu_monitoring');
+        const vesselInfoModal = $('#vesselInfoModal');
+        const clearRoutesButton = $('#clearRoutesButton');
+        const showRoutesByDateButton = $('#showRoutesByDateButton');
+        const showAllRoutesButton = $('#showAllRoutesButton');
+        $(document).ready(function () {
+            menuMonitoring.addClass('menu-item-active');
+            const osm = L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+                maxZoom: 24,
+            });
+            const carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+                maxZoom: 24,
+            });
+            const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 24,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            });
+            const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+                maxZoom: 24,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            });
+            const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                maxZoom: 24,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            });
+            const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+                maxZoom: 24,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            });
+            let baseMaps = {
+                "OpenStreet": osm,
+                "Carto": carto,
+                'Google Streets': googleStreets,
+                'Google Hybrid': googleHybrid,
+                'Google Satellite': googleSat,
+                'Google Terrain': googleTerrain
+            };
+            // let map = L.map('kt_content', {
+            //     attributionControl: false,
+            //     zoom: 5,
+            //     layers: [googleTerrain]
+            // }).setView([-0.789275, 113.921327]);
+
+            let map = L.map('kt_content', {
+                attributionControl: false,
+                zoomControl: true, // aktifkan tombol zoom in/out
+                zoom: 6,           // ganti sesuai kebutuhan awal, misalnya 6
+                layers: [googleTerrain]
+            }).setView([-0.789275, 113.921327]); // set koordinat tengah
+            
+            // fungsi untuk measure distance
+            let currentLine = null;
+            let isDrawing = false;
+            let currentLatLngs = [];
+            const drawnLayers = [];
+            let searchPolylines = []; 
+            let polyline = null;
+            let arrowMarkers = [];
+
+            // Inisialisasi kontrol Leaflet.pm
+            map.pm.addControls({
+                position: 'topleft',
+                drawCircle: false,
+                drawMarker: false,
+                drawRectangle: false,
+                drawPolygon: false,
+                drawCircleMarker: false,
+                drawText: false,
+                cutPolygon: false,
+                editMode: true,
+                removalMode: true
+            });
+
+            // Event saat mulai menggambar
+            map.on('pm:drawstart', function (e) {
+                if (e.shape === 'Line') {
+                    isDrawing = true;
+                    setMarkerInteractive(false); // ❌ nonaktifkan klik marker saat menggambar
+                    currentLine = L.polyline([], { color: 'blue' }).addTo(map);
+                    drawnLayers.push(currentLine);
+                }
+            });
+
+            map.on('pm:drawend', function () {
+                isDrawing = false;
+                currentLine = null;
+                currentLatLngs = [];
+                setMarkerInteractive(true); // ✅ aktifkan kembali klik marker setelah selesai menggambar
+            });
+
+            function setMarkerInteractive(active) {
+                markers.eachLayer(function (layer) {
+                    if (active) {
+                        layer.on('click', markerOnClick);
+                    } else {
+                        layer.off('click', markerOnClick);
+                    }
+                });
+            }
+
+            const showDistance = (latlngs, layer) => {
+                let distance = 0;
+                for (let i = 1; i < latlngs.length; i++) {
+                    distance += latlngs[i - 1].distanceTo(latlngs[i]);
+                }
+                distance = distance / 1000; // km
+                const nautical = (distance / 1.852).toFixed(2) + ' nautical miles';
+
+                layer.bindPopup('Jarak total: ' + nautical).openPopup();
+            };
+
+            // Event saat garis berhasil digambar
+            map.on('pm:create', function (e) {
+                const layer = e.layer;
+                drawnLayers.push(layer);
+
+                const latlngs = layer.getLatLngs();
+                showDistance(latlngs, layer);
+
+                layer.on('click', function () {
+                    showDistance(layer.getLatLngs(), layer);
+                });
+            });
+
+            // Buat tombol reset (hapus semua layer hasil gambar)
+            const resetControl = L.control({ position: 'topleft' });
+
+            resetControl.onAdd = function () {
+                const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                div.innerHTML = '<button title="Reset Gambar" style="width:30px;height:30px;">⟳</button>';
+                div.style.backgroundColor = 'white';
+                div.style.cursor = 'pointer';
+
+                // Agar klik tombol tidak menyeret peta
+                L.DomEvent.disableClickPropagation(div);
+
+                div.onclick = function () {
+                    resetDrawings();
+                };
+                return div;
+            };
+
+            resetControl.addTo(map);
+
+            // Fungsi reset semua layer dan elemen tambahan
+            function resetDrawings() {
+                // Hapus semua layer hasil gambar manual
+                if (drawnLayers && drawnLayers.length > 0) {
+                    drawnLayers.forEach(layer => map.removeLayer(layer));
+                    drawnLayers.length = 0;
+                }
+
+                // Hapus semua arrow marker hasil gambar manual
+                if (arrowMarkers && arrowMarkers.length > 0) {
+                    arrowMarkers.forEach(marker => map.removeLayer(marker));
+                    arrowMarkers.length = 0;
+                }
+
+                // Reset status gambar aktif
+                currentLine = null;
+                currentLatLngs = [];
+                isDrawing = false;
+
+                // Hapus semua polyline hasil pencarian
+                if (searchPolylines && searchPolylines.length > 0) {
+                    searchPolylines.forEach(line => map.removeLayer(line));
+                    searchPolylines.length = 0;
+                }
+
+                // Reset polyline utama jika ada
+                if (typeof polyline !== 'undefined' && polyline !== null) {
+                    map.removeLayer(polyline);
+                    polyline = null;
+                }
+
+                // Jalankan fungsi khusus penghapusan arrow hasil search jika ada
+                if (typeof clearArrowMarkers === 'function') {
+                    clearArrowMarkers();
+                }
+            }
+
+            // L.control.layers(baseMaps).addTo(map);
+            let VesselMarker = L.Marker.extend({
+                options: {
+                    vessel: ''
+                }
+            });
+            let vessels = JSON.parse('[(${vessels})]');
+            let vesselData = [];
+            let vesselArray = [];
+            let firstLoad = false;
+            let vesselPositions = {};  // Simpan posisi kapal per ID unik (misal vesselId)
+
+            let allowRealtimeRender = true;
+            
+            // LayerGroup untuk realtime agar bisa disembunyikan/dimunculkan
+            const realtimeLayerGroup = L.layerGroup().addTo(map);
+
+            // LayerGroup yang sudah kamu punya untuk semua marker
+            const markers = L.featureGroup().addTo(realtimeLayerGroup); // ganti penempatan markers ke dalam realtimeLayerGroup
+
+            // Simpan marker yang ditampilkan secara manual lewat Select2
+            let currentVesselLayers = [];
+            
+            const realtime = L.realtime(function (success, error) {
+                fetch('[[@{/rest/vessel/position}]]', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-type': 'application/json',
+                    }
+                }).then(response => response.json())
+                    .then((responseJson) => {
+                        vesselArray.splice(0, vesselArray.length);
+                        success(responseJson);
+                    })
+                    .catch(error => console.log(error))
+            }, {
+                interval: 60 * 1000,
+                getFeatureId: function (featureData) {
+                    //console.log(featureData);
+                    return featureData.id;
+                },
+                pointToLayer: function (feature, latlng) {
+                    if (!allowRealtimeRender) {
+                        return null; // Jangan tampilkan kapal apapun
+                    }
+
+                    vesselArray.push(feature);
+
+                    // Heading
+                    const heading = parseFloat(feature.properties.heading) || 0;
+
+                    // Waktu terakhir terima data
+                    const receiveDateStr = feature.properties.receiveDate; // misalnya "2025-06-27T22:32:50.000+07:00"
+                    const lastReportTime = new Date(receiveDateStr);
+                    const now = new Date();
+
+                    // Cek selisih waktu
+                    const diffMs = now - lastReportTime;
+                    const isInactive = diffMs > 48 * 60 * 60 * 1000; // 48 jam
+
+                    // Ganti icon sesuai status aktif/tidak
+                    const iconUrl = isInactive
+                        ? '[[@{/media/misc/ship_09.png}]]' // Gambar kapal warna lain
+                        : '[[@{/media/misc/ship_07.png}]]';
+
+                    const icon = L.icon({
+                        iconUrl: iconUrl,
+                        iconSize: [35, 35],
+                        iconAnchor: [17.5, 17.5],
+                    });
+
+                    // Marker
+                    const marker = L.marker(latlng, {
+                        icon: icon,
+                        interactive: !isDrawing,
+                        rotationAngle: heading,
+                        rotationOrigin: 'center center',
+                        vessel: feature.properties
+                    }).addTo(map).bindTooltip(feature.properties.name, {
+                        permanent: true,
+                        opacity: 1,
+                        direction: 'top',
+                        offset: [0, -20],
+                        className: isInactive ? 'tooltip-inactive' : 'tooltip-active' // opsional
+                    }).on('click', markerOnClick);
+
+                    markers.addLayer(marker);
+                    return marker;
+
+                },
+                updateFeature: function (feature, marker) {
+                }
+
+
+            }).addTo(realtimeLayerGroup);
+
+            realtime.on('update', function () {
+                const bounds = realtime.getBounds();
+                if (!firstLoad && bounds.isValid()) {
+                    map.fitBounds(bounds, { maxZoom: 9 });
+                    firstLoad = true;
+                }
+            });
+
+            var vesselCombo = L.control({position: 'topright'});
+            vesselCombo.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'vessel-panel');
+                div.innerHTML =
+                    '<div class="d-flex align-items-center">' +
+                    '   <select class="form-control form-select" id="vessel_email_cb" name="vessel_email_cb">' +
+                    '       <option></option>' +
+                    '   </select>' +
+                    '</div>';
+                div.firstChild.onmousedown = div.firstChild.ondblclick = L.DomEvent.stopPropagation;
+                return div;
+            };
+            vesselCombo.addTo(map);
+            $.each(vessels, function (key, vessel) {
+                vesselData.push({id: vessel.email, text: vessel.name});
+            });
+
+            vesselData.unshift({ id: 'All', text: 'Show All' });
+            
+            $('#vessel_email_cb').select2({
+                width: '200px',
+                placeholder: "Select Vessel",
+                allowClear: true,
+                data: vesselData
+            }).on('select2:select', (e) => {
+                const data = e.params.data;
+                const vesselEmail = data.id;
+
+                currentVesselLayers.forEach(layer => map.removeLayer(layer));
+                currentVesselLayers = [];
+
+                if (vesselEmail === 'All') {
+                    allowRealtimeRender = true;
+                    map.addLayer(realtimeLayerGroup);
+                } else {
+                    allowRealtimeRender = false;
+                    map.removeLayer(realtimeLayerGroup);
+
+                    for (const geoJson of vesselArray) {
+                        const vessel = geoJson.properties;
+                        if (vessel.vesselEmail === vesselEmail) {
+                            const marker = createVesselMarker(vessel);
+                            currentVesselLayers.push(marker);
+                            break;
+                        }
+                    }
+                }
+            }).on('select2:unselect', () => {
+                allowRealtimeRender = false;
+                currentVesselLayers.forEach(layer => map.removeLayer(layer));
+                currentVesselLayers = [];
+                map.removeLayer(realtimeLayerGroup);
+            });
+
+            function createVesselMarker(vessel) {
+                // Heading
+                const heading = parseFloat(vessel.heading) || 0;
+
+                // Waktu terakhir terima data
+                const receiveDateStr = vessel.receiveDate;
+                const lastReportTime = new Date(receiveDateStr);
+                const now = new Date();
+
+                // Cek selisih waktu
+                const diffMs = now - lastReportTime;
+                const isInactive = diffMs > 48 * 60 * 60 * 1000; // 48 jam
+
+                // Ganti icon sesuai status aktif/tidak
+                const iconUrl = isInactive
+                    ? '[[@{/media/misc/ship_09.png}]]'
+                    : '[[@{/media/misc/ship_07.png}]]';
+
+                const icon = L.icon({
+                    iconUrl: iconUrl,
+                    iconSize: [35, 35],
+                    iconAnchor: [17.5, 17.5],
+                });
+
+                // Posisi marker
+                const latlng = new L.latLng(vessel.latitude, vessel.longitude);
+
+                const marker = L.marker(latlng, {
+                    icon: icon,
+                    interactive: true,
+                    rotationAngle: heading,
+                    rotationOrigin: 'center center',
+                    vessel: vessel
+                }).bindTooltip(vessel.name, {
+                    permanent: true,
+                    opacity: 1,
+                    direction: 'top',
+                    offset: [0, -20],
+                    className: isInactive ? 'tooltip-inactive' : 'tooltip-active'
+                }).on('click', markerOnClick);
+
+                marker.addTo(map); // tambahkan langsung ke peta
+                return marker;
+            }
+            // $('#vessel_email_cb').select2({
+            //     width: '200px',
+            //     placeholder: "Select Vessel",
+            //     allowClear: true,
+            //     data: vesselData
+            //     //dropdownParent: $('#settingPanel')
+            // }).on('select2:select', (e) => {
+            //     var data = e.params.data;
+            //     // console.log(data)
+            //     let vesselEmail = data.id;
+            //     for (const geoJson of vesselArray) {
+            //         let vessel = geoJson.properties;
+            //         // console.log(vessel)
+            //         // console.log(vessel)
+            //         if (vessel.vesselEmail === vesselEmail) {
+            //             var latlng = new L.latLng(vessel.latitude, vessel.longitude);
+            //             openLeafletSidebar(vessel, latlng, '');
+            //             break;
+            //         }
+            //     }
+
+            // }).on('select2:unselect', (e) => {
+            //     vesselInfoModal.modal('hide');
+            // });
+            
+            let startFlatpickr, endFlatpickr;
+
+            startFlatpickr = flatpickr("#start_date", {
+                enableTime: true,
+                dateFormat: "d/m/Y H:i",
+                time_24hr: true,
+                defaultDate: new Date(new Date().setHours(0, 0, 0, 0)), // jam 00:00 hari ini
+                position: "auto left",
+                clickOpens: false, //  jangan buka otomatis saat input difokus
+                allowInput: true,  //  izinkan input manual
+                onChange: function(selectedDates, dateStr, instance) {
+                    if (selectedDates.length > 0) {
+                    endFlatpickr.set("minDate", selectedDates[0]);
+                    }
+                },
+                onReady: function (selectedDates, dateStr, instance) {
+                    const closeBtn = document.createElement("button");
+                    closeBtn.textContent = "Close";
+                    closeBtn.className = "flatpickr-close-btn btn btn-sm btn-outline-secondary mt-2";
+                    closeBtn.style.width = "100%";
+                    closeBtn.onclick = () => instance.close();
+
+                    instance.calendarContainer.appendChild(closeBtn);
+                }
+            });
+
+            endFlatpickr = flatpickr("#end_date", {
+                enableTime: true,
+                dateFormat: "d/m/Y H:i",
+                time_24hr: true,
+                defaultDate: new Date(), // waktu sekarang
+                position: "auto left",
+                clickOpens: false, //  jangan buka otomatis saat input difokus
+                allowInput: true,  //  izinkan input manual
+                onReady: function (selectedDates, dateStr, instance) {
+                    const closeBtn = document.createElement("button");
+                    closeBtn.textContent = "Close";
+                    closeBtn.className = "flatpickr-close-btn btn btn-sm btn-outline-secondary mt-2";
+                    closeBtn.style.width = "100%";
+                    closeBtn.onclick = () => instance.close();
+
+                    instance.calendarContainer.appendChild(closeBtn);
+                }
+            });
+
+            document.getElementById("start_date_trigger").addEventListener("click", () => startFlatpickr.open());
+            document.getElementById("end_date_trigger").addEventListener("click", () => endFlatpickr.open());
+
+            vesselInfoModal.on('hidden.bs.modal', function () {
+                // $('#vessel_email_cb').val(null).trigger('change');
+            });
+
+            function markerOnClick(e) {
+                const latlng = e.latlng;
+
+                if (isDrawing) {
+                    // Jika menggambar tapi currentLine belum ada, buat sekarang
+                    if (!currentLine) {
+                        currentLine = L.polyline([latlng], { color: 'blue' }).addTo(map);
+                        drawnLayers.push(currentLine);
+                        currentLatLngs = [latlng];
+                    } else {
+                        currentLatLngs.push(latlng);
+                        currentLine.addLatLng(latlng);
+                    }
+                } else {
+                    const vessel = this.options.vessel;
+                    openLeafletSidebar(vessel, e.target.getLatLng(), '');
+                }
+            }
+
+            let openLeafletSidebar = (vessel, latLng, data) => {
+                map.setView(latLng);
+                $('#vesselTable_basicinformation tbody').empty();
+                $('#vesselTable_positionreport tbody').empty();
+                $('#vesselTable_meteorology tbody').empty();
+                $('#vesselTable_fuelreportdata tbody').empty();
+
+                axios.post('[[@{/rest/vessel/shipinfo}]]', {
+                    message_id: vessel.messageId,
+                    vessel_email: vessel.vesselEmail,
+                    start_date: $('#start_date').val(),
+                    end_date: $('#end_date').val(),
+                    summary: 1,
+                    vessel_name: vessel.name
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then((response) => {
+
+                    let tBody_fuelreportdata = 
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">Average Speed</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + $.number(response.data.summary.avgSpeed, 2, '.', ',') + ' Knots </td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">Average Port RPM</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + $.number(response.data.summary.avgPortRpm, 2, '.', ',') + '</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">Average STBD RPM</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + $.number(response.data.summary.avgStarboardRpm, 2, '.', ',') + '</td> ' +
+                    '</tr>' + 
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">Fuel Consumption</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + response.data.summary.consumption + '</td> ' +
+                    '</tr>' + 
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">Port Engine Running Time</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + response.data.data.formattedPortERH + '</td> ' +
+                    '</tr>' + 
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">STBD Engine Running Time</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + response.data.data.formattedStbdERH + '</td> ' +
+                    '</tr>' + 
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">Port Genset Running Time</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + response.data.data.formattedPortGRH + '</td> ' +
+                    '</tr>' + 
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">STBD Genset Running Time</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + response.data.data.formattedStbdGRH + '</td> ' +
+                    '</tr>' + 
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">Shaft RPM Port</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + response.data.data.portShaftRPM + '</td> ' +
+                    '</tr>' + 
+                    '<tr class=""> ' +
+                    '   <td class="text-nowrap align-middle">Shaft RPM STBD</td>' +
+                    '   <td class="text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="align-middle" colspan="4">' + response.data.data.stbdShaftRPM + '</td> ' +
+                    '</tr>';
+
+                    $('#vesselTable_fuelreportdata tbody').append(tBody_fuelreportdata);
+
+                })
+                .catch((error) => {
+                    console.error('Error fetching vessel position:', error);
+                });
+
+                
+                let proximity = "-";
+                if (vessel.proximity !== null) {
+                    proximity = vessel.proximity;
+                }
+                let direction = '-';
+                if (vessel.proximityBearing !== null && vessel.proximityDirection !== null) {
+                    direction = vessel.proximityBearing + '&deg; ' + vessel.proximityDirection;
+                } else if (vessel.proximityBearing !== null && vessel.proximityDirection === null) {
+                    direction = vessel.proximityBearing + '&deg;';
+                } else if (vessel.proximityBearing === null && vessel.proximityDirection !== null) {
+                    direction = vessel.proximityDirection;
+                } else {
+                    direction = '-';
+                }
+                let groundLevel = '-';
+                if (vessel.groundLevel !== null) {
+                    groundLevel = vessel.groundLevel + ' hPa';
+                }
+                let seaLevel = '-';
+                if (vessel.seaLevel !== null) {
+                    seaLevel = vessel.seaLevel + ' hPa';
+                }
+                let windGust = '-';
+                if (vessel.windGust !== null) {
+                    windGust = vessel.windGust + ' miles/hour';
+                }
+                let windSpeed = '-';
+                if (vessel.windSpeed !== null) {
+                    windSpeed = vessel.windSpeed + ' miles/hour';
+                }
+
+                // Anggap vessel.receiveDate adalah string atau objek Date yang valid
+                const receiveDate = moment(vessel.receiveDate);
+
+                // Hitung selisih waktu antara sekarang dan receiveDate dalam jam
+                const hoursDifference = moment().diff(receiveDate, 'hours');
+
+                $('#vessel_name').html(vessel.name);
+                $('#vessel_email').val(vessel.vesselEmail);
+                
+                let tBody_positionreport = 
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Course</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">' + (data.course != null ? data.course : '-') + '</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Latitiude/Lon</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">' + Number.parseFloat(vessel.latitude).toFixed(5) + ' (' + convertDMS(vessel.latitude, vessel.longitude).dmsLat + ') / ' + Number.parseFloat(vessel.longitude).toFixed(5) + ' (' + convertDMS(vessel.latitude, vessel.longitude).dmsLng + ')</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Timestamp</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">' + moment(vessel.receiveDate).format("DD/MM/YYYY HH:mm:ss") + '</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Update</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">' + hoursDifference + " hours ago" + '</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Proximity</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">' + proximity + '</td> ' +
+                    '</tr>';
+
+                let tbody_meteorology = 
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Pressure</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">' + (data.course != null ? data.course : '-') + '</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Wind speed/Lon</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">-</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Wind Direction</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">-</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Wind & swell wave height</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">-</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Wind wave period</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">-</td> ' +
+                    '</tr>' +
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Primary wave period</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">-</td> ' +
+                    '</tr>' + 
+                    '<tr class=""> ' +
+                    '   <td class="p-2 text-nowrap align-middle">Primary wave direction</td>' +
+                    '   <td class="p-2 text-nowrap align-middle" style="width:1%;">:</td>' +
+                    '   <td class="p-2 align-middle" colspan="4">-</td> ' +
+                    '</tr>';
+
+                $('#vesselTable_positionreport tbody').html(tBody_positionreport);
+                $('#vesselTable_meteorology tbody').append(tbody_meteorology);
+
+                vesselInfoModal.modal('show');
+
+            };
+
+            function clearArrowMarkers() {
+                arrowMarkers.forEach(marker => map.removeLayer(marker));
+                arrowMarkers.length = 0;
+            }
+
+            clearRoutesButton.on('click', (e) => {
+                e.preventDefault();
+
+                // Hapus semua garis hasil search
+                searchPolylines.forEach(line => map.removeLayer(line));
+                searchPolylines.length = 0;
+                polyline = null;
+
+                // Hapus semua arrow
+                clearArrowMarkers();
+            });
+            showRoutesByDateButton.on('click', (e) => {
+                //   console.log(e)
+                e.preventDefault();
+
+                const form = document.getElementById('routeFilterForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity(); // Menampilkan pesan error di browser
+                    return; // Hentikan eksekusi jika form tidak valid
+                }
+
+                if (polyline !== null) {
+                    map.removeLayer(polyline);
+                }
+                KTApp.block('#vesselInfoModal', {
+                    overlayColor: '#000000',
+                    state: 'danger',
+                    message: 'Please wait...'
+                });
+                axios.post('[[@{/rest/vessel/routes}]]', $('#routeFilterForm').serializeToJSON({}), {}).then((response) => {
+                    var res = response.data;
+                    // console.log(res);
+                    if (res.success && res.routes.length > 0) {
+                        KTApp.unblock('#vesselInfoModal');
+
+                        // Ambil dan konversi data koordinat rute
+                        let routes = [];
+                        $.each(res.routes, function (index, route) {
+                            const latLng = [parseFloat(route.latitude), parseFloat(route.longitude)];
+                            routes.push(latLng);
+                        });
+
+                        // Tambahkan polyline ke peta
+                        const polyline = L.polyline(routes, {
+                            color: '#007bff',
+                            weight: 3,
+                            className: 'route-line'
+                        }).addTo(map);
+
+                        searchPolylines.push(polyline);
+
+                        // Tambahkan icon panah sebagai marker di setiap segmen
+                        routes.forEach((route, i) => {
+                            if (i === routes.length - 1) return; // skip titik terakhir
+
+                            const from = routes[i];
+                            const to = routes[i + 1];
+
+                            const midLat = (from[0] + to[0]) / 2;
+                            const midLng = (from[1] + to[1]) / 2;
+
+                            // const bearing = calculateBearing(from[0], from[1], to[0], to[1]);
+
+                            // Tetap hitung course (jika to-nya ada)
+                            let bearing = 0;
+                            if (to) {
+                                bearing = calculateBearing(from[0], from[1], to[0], to[1]);
+                            }
+                            // const rotationAngle = bearing - 90;
+                            // const rotationAngle = (bearing + 90) % 360; // sesuaikan dari utara ke kanan
+                            const rotationAngle = bearing;
+
+                            const vessel = res.features[i]; // ambil dari route, karena ada name, heading, dll
+                            const speed = vessel.properties.speed || 0;
+                            const courseText = `Course: ${bearing.toFixed(2)}° at ${parseFloat(speed).toFixed(2)} knots`;
+
+                            let data = {
+                                course: courseText,
+                            };
+
+                            const arrowMarker = L.marker([midLat, midLng], {
+                                icon: L.divIcon({
+                                    className: 'custom-arrow-marker',
+                                    html: `
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" style="transform: rotate(${rotationAngle}deg); transform-origin: center; cursor: pointer; pointer-events: auto;">
+                                            <polygon points="6,0 12,12 6,9 0,12" fill="purple" />
+                                        </svg>
+                                    `,
+                                    iconSize: [12, 12],
+                                    iconAnchor: [6, 8]
+                                }),
+                                vessel: vessel
+                            }).addTo(map);
+
+                            arrowMarkers.push(arrowMarker);
+
+                            arrowMarker.on('click', function (e) {
+                                if (isDrawing) return; // ⛔ Jangan lakukan apapun saat sedang menggambar
+                                let vessel = this.options.vessel.properties;
+                                openLeafletSidebar(vessel, e.target.getLatLng(), data);
+                            });
+                        });
+
+                        // Pastikan peta me-refresh ukurannya
+                        map.invalidateSize();
+
+
+                    } else {
+                        let option = {
+                            title: 'No Route',
+                            messageText: '<p class="mt-2" style="max-height: 200px; overflow-y: auto;">No route available in selected timeline.</p>',
+                            icon: 'info'
+                        }
+                        WebUtil.showErrorMessage($, null, option, vesselInfoModal);
+                    }
+                }).catch((error) => {
+                    const data = error.response.data.data;
+                    let option;
+                    if (error.response.status === 404) {
+                        const imgSrc = '[[@{/media/misc/doh.png}]]';
+                        option = {
+                            title: "Not Found [404]",
+                            messageText: '<img class="img-fluid w-50 mt-2" src="' + imgSrc + '" alt="">',
+                            icon: 'error'
+                        };
+                    } else {
+                        option = {
+                            title: data.code,
+                            messageText: '<p class="mt-2" style="max-height: 200px; overflow-y: auto;">' + data.message + '</p>',
+                            icon: 'error'
+                        }
+                    }
+                    WebUtil.showErrorMessage($, null, option, vesselInfoModal);
+                });
+            });
+
+            // saat sidebar dibuka/diclose, tambahkan event listener untuk mengatur ukuran peta
+            $('.toggle-sidebar-btn').on('click', function() {
+                $('#sidebar').toggleClass('hidden');
+
+                $('#sidebar').one('transitionend', function() {
+                    map.invalidateSize();
+                });
+            });
+
+            showAllRoutesButton.on('click', (e) => {
+                e.preventDefault();
+                if (polyline !== null) {
+                    map.removeLayer(polyline);
+                }
+                $('#start_date').val(null).trigger('change');
+                $('#end_date').val(null).trigger('change');
+                KTApp.block('#vesselInfoModal', {
+                    overlayColor: '#000000',
+                    state: 'danger',
+                    message: 'Please wait...'
+                });
+                axios.post('[[@{/rest/vessel/routes}]]', $('#routeFilterForm').serializeToJSON({}), {}).then((response) => {
+                    var res = response.data;
+                    //console.log(res);
+                    if (res.success && res.routes.length > 0) {
+                        KTApp.unblock('#vesselInfoModal');
+                        let routes = [];
+                        let counter = 0;
+                        let baseLocation;
+                        $.each(res.routes, function (index, route) {
+                            if (counter === 0) {
+                                baseLocation = [parseFloat(route.latitude), parseFloat(route.longitude)];
+                            }
+                            counter++;
+                            routes.push([parseFloat(route.latitude), parseFloat(route.longitude)]);
+                        });
+
+                        polyline = L.polyline(routes, {className: 'route-line'}).addTo(map);
+                        searchPolylines.push(polyline);
+                        
+                        // Tambahkan icon panah sebagai marker di setiap segmen
+                        routes.forEach((route, i) => {
+                            if (i === routes.length - 1) return; // skip titik terakhir
+
+                            const from = routes[i];
+                            const to = routes[i + 1];
+
+                            const midLat = (from[0] + to[0]) / 2;
+                            const midLng = (from[1] + to[1]) / 2;
+
+                            // const bearing = calculateBearing(from[0], from[1], to[0], to[1]);
+
+                            // Tetap hitung course (jika to-nya ada)
+                            let bearing = 0;
+                            if (to) {
+                                bearing = calculateBearing(from[0], from[1], to[0], to[1]);
+                            }
+                            // const rotationAngle = bearing - 90;
+                            // const rotationAngle = (bearing + 90) % 360; // sesuaikan dari utara ke kanan
+                            const rotationAngle = bearing;
+
+                            const vessel = res.features[i]; // ambil dari route, karena ada name, heading, dll
+                            const speed = vessel.properties.speed || 0;
+                            const courseText = `Course: ${bearing.toFixed(2)}° at ${parseFloat(speed).toFixed(2)} knots`;
+
+                            let data = {
+                                course: courseText,
+                            };
+
+                            const arrowMarker = L.marker([midLat, midLng], {
+                                icon: L.divIcon({
+                                    className: 'custom-arrow-marker',
+                                    html: `
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" style="transform: rotate(${rotationAngle}deg); transform-origin: center; cursor: pointer; pointer-events: auto;">
+                                            <polygon points="6,0 12,12 6,9 0,12" fill="purple" />
+                                        </svg>
+                                    `,
+                                    iconSize: [12, 12],
+                                    iconAnchor: [6, 8]
+                                }),
+                                vessel: vessel
+                            }).addTo(map);
+
+                            arrowMarkers.push(arrowMarker);
+
+                            arrowMarker.on('click', function (e) {
+                                if (isDrawing) return; // ⛔ Jangan lakukan apapun saat sedang menggambar
+                                let vessel = this.options.vessel.properties;
+                                openLeafletSidebar(vessel, e.target.getLatLng(), data);
+                            });
+                        });
+
+                        map.invalidateSize();
+                    } else {
+                        let option = {
+                            title: 'No Route',
+                            messageText: '<p class="mt-2" style="max-height: 200px; overflow-y: auto;">No route available in selected timeline.</p>',
+                            icon: 'info'
+                        }
+                        WebUtil.showErrorMessage($, null, option, vesselInfoModal);
+                    }
+                }).catch((error) => {
+                    const data = error.response.data.data;
+                    let option;
+                    if (error.response.status === 404) {
+                        const imgSrc = '[[@{/media/misc/doh.png}]]';
+                        option = {
+                            title: "Not Found [404]",
+                            messageText: '<img class="img-fluid w-50 mt-2" src="' + imgSrc + '" alt="">',
+                            icon: 'error'
+                        };
+                    } else {
+                        option = {
+                            title: data.code,
+                            messageText: '<p class="mt-2" style="max-height: 200px; overflow-y: auto;">' + data.message + '</p>',
+                            icon: 'error'
+                        }
+                    }
+                    WebUtil.showErrorMessage($, null, option, vesselInfoModal);
+                });
+            });
+        });
+
+        function calculateBearing(lat1, lng1, lat2, lng2) {
+            const toRad = deg => deg * Math.PI / 180;
+            const toDeg = rad => rad * 180 / Math.PI;
+
+            const dLon = toRad(lng2 - lng1);
+            const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+            const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+                    Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+            const brng = Math.atan2(y, x);
+            return (toDeg(brng) + 360) % 360;
+        }
+
+        $(window).on('load', function (e) {
+        });
+
+        function calculateCourse(lat1, lon1, lat2, lon2, speed) {
+            // Ubah ke radian
+            const toRadians = (deg) => deg * Math.PI / 180;
+            const toDegrees = (rad) => rad * 180 / Math.PI;
+
+            const φ1 = toRadians(lat1);
+            const φ2 = toRadians(lat2);
+            const Δλ = toRadians(lon2 - lon1);
+
+            const y = Math.sin(Δλ) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2) -
+                        Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+            let θ = Math.atan2(y, x);
+            let course = (toDegrees(θ) + 360) % 360;
+
+            return `Course: ${course.toFixed(2)}° at ${parseFloat(speed).toFixed(2)} knots`;
+        }
+
+    })($);
+  </script>
+
+</body>
+
+</html>

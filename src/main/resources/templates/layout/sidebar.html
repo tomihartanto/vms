@@ -1,0 +1,68 @@
+<aside id="sidebar" class="sidebar" th:fragment="sidebarFragment(activeMenu)">
+    <ul class="sidebar-nav" id="sidebar-nav">
+
+        <!-- Monitoring -->
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${activeMenu == 'monitoring' ? '' : 'collapsed'}" th:href="@{/monitoring}">
+                <i class="bi bi-grid"></i>
+                <span>Vessel Position</span>
+            </a>
+        </li><!-- End Monitoring Nav -->
+
+        <li class="nav-item">
+            <a class="nav-link" data-bs-target="#report-nav" data-bs-toggle="collapse" href="#"
+               th:classappend="${#strings.startsWith(activeMenu, 'report-') ? '' : 'collapsed'}">
+                <i class="bi bi-layout-text-window-reverse"></i>
+                <span>Reports</span>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="report-nav" class="nav-content collapse"
+                th:classappend="${#strings.startsWith(activeMenu, 'report-') ? 'show' : ''}"
+                data-bs-parent="#sidebar-nav">
+                
+                <li>
+                    <a th:href="@{/report/vessel-monitoring-report}" th:class="${activeMenu == 'report-vessel-fuel-report' ? 'active' : ''}">
+                        <i class="bi bi-circle"></i>
+                        <span>Vessel fuel report</span>
+                    </a>
+                </li>
+                
+                <li>
+                    <a th:href="@{/report/vessel-daily-report}" th:class="${activeMenu == 'report-vessel-one-day-report' ? 'active' : ''}">
+                        <i class="bi bi-circle"></i>
+                        <span>Vessel One Day Report</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li class="nav-item" th:if="${account.privilege == 1}">
+            <a class="nav-link" data-bs-target="#setting-nav" data-bs-toggle="collapse" href="#"
+               th:classappend="${#strings.startsWith(activeMenu, 'setting-') ? '' : 'collapsed'}">
+                <i class="bi bi-gear"></i>
+                <span>Setting</span>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="setting-nav" class="nav-content collapse"
+                th:classappend="${#strings.startsWith(activeMenu, 'setting-') ? 'show' : ''}"
+                data-bs-parent="#sidebar-nav">
+                
+                <li>
+                    <a th:href="@{/setting/vessel}" th:class="${activeMenu == 'setting-vessel' ? 'active' : ''}">
+                        <i class="bi bi-circle"></i>
+                        <span>Setting Vessel</span>
+                    </a>
+                </li>
+                
+                <li>
+                    <a th:href="@{/setting/user}" th:class="${activeMenu == 'setting-user' ? 'active' : ''}">
+                        <i class="bi bi-circle"></i>
+                        <span>Setting User</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        
+    </ul>
+
+</aside>
